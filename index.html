@@ -1,0 +1,1619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WolfStation: Death Stranding Experience</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        tarBlack: '#05070a',
+                        tarDark: '#0b1017',
+                        chiralGold: '#d4af37',
+                        odradekOrange: '#e67e22',
+                        btBlue: '#1f3a52',
+                        strandBlue: '#4fa3d1',
+                        cargoWhite: '#f0f4f8'
+                    },
+                    fontFamily: {
+                        tech: ['Share Tech Mono', 'monospace'],
+                        main: ['Rajdhani', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #05070a;
+            color: #f0f4f8;
+            font-family: 'Rajdhani', sans-serif;
+            overflow: hidden;
+            user-select: none;
+            background-image: radial-gradient(circle at 50% 100%, #0b1017 0%, #000000 100%);
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #05070a; }
+        ::-webkit-scrollbar-thumb { background: #4fa3d1; border-radius: 3px; }
+
+        /* Timefall Rain Effect */
+        #rain-container { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+        .drop {
+            position: absolute;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0.25));
+            width: 1px;
+            height: 40px;
+            animation: fall linear infinite;
+        }
+        @keyframes fall {
+            0% { transform: translateY(-10vh); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(110vh); opacity: 0; }
+        }
+
+        /* Screen Transitions */
+        .screen { display: none; }
+        .screen.active { display: flex; animation: slideFadeUp 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+
+        @keyframes slideFadeUp { 
+            from { transform: translateY(20px); opacity: 0; filter: blur(4px); } 
+            to { transform: translateY(0); opacity: 1; filter: blur(0); } 
+        }
+        .fade-in { animation: fadeIn 0.6s ease-in forwards; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Stranding Panels */
+        .panel-bridges {
+            background: linear-gradient(135deg, rgba(11, 16, 23, 0.85) 0%, rgba(5, 7, 10, 0.95) 100%);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(79, 163, 209, 0.2);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.9), inset 0 0 30px rgba(79,163,209,0.05);
+            border-radius: 2px;
+            position: relative;
+        }
+        .panel-bridges::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, #4fa3d1, transparent);
+        }
+
+        .panel-chiral {
+            background: linear-gradient(135deg, rgba(20, 15, 5, 0.9) 0%, rgba(5, 5, 5, 0.95) 100%);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.9), inset 0 0 30px rgba(212,175,55,0.05);
+            border-radius: 2px;
+        }
+
+        /* Buttons */
+        .btn-porter {
+            background: rgba(11, 16, 23, 0.8);
+            color: #4fa3d1;
+            font-family: 'Share Tech Mono', monospace;
+            border: 1px solid #4fa3d1;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            border-radius: 2px;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(79,163,209,0.2);
+        }
+        .btn-porter::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(79, 163, 209, 0.2), transparent);
+            transition: left 0.4s;
+        }
+        .btn-porter:hover:not(:disabled)::before { left: 200%; }
+        .btn-porter:hover:not(:disabled) {
+            background: rgba(79, 163, 209, 0.15);
+            box-shadow: 0 5px 20px rgba(79, 163, 209, 0.5);
+            color: #fff;
+            transform: translateY(-2px);
+        }
+        .btn-porter:disabled { opacity: 0.5; filter: grayscale(100%); cursor: not-allowed; }
+
+        .btn-chiral { border-color: #d4af37; color: #d4af37; box-shadow: 0 0 10px rgba(212,175,55,0.2); }
+        .btn-chiral:hover:not(:disabled) { background: rgba(212, 175, 55, 0.15); box-shadow: 0 5px 20px rgba(212, 175, 55, 0.5); color: #fff; }
+
+        .btn-bt { border-color: #e74c3c; color: #e74c3c; box-shadow: 0 0 10px rgba(231,76,60,0.2); }
+        .btn-bt:hover:not(:disabled) { background: rgba(231, 76, 60, 0.15); box-shadow: 0 5px 20px rgba(231, 76, 60, 0.5); color: #fff; }
+
+        /* Character Cards */
+        .char-card {
+            transition: all 0.3s; cursor: pointer; border: 1px solid rgba(79, 163, 209, 0.3);
+            background: rgba(11, 16, 23, 0.6); filter: grayscale(80%);
+        }
+        .char-card:hover { filter: grayscale(0%); transform: translateY(-5px); border-color: rgba(79, 163, 209, 0.6); }
+        .char-card.selected { filter: grayscale(0%); border-color: #4fa3d1; box-shadow: 0 0 20px rgba(79, 163, 209, 0.5); background: rgba(79, 163, 209, 0.15); }
+
+        /* Options */
+        .option-btn {
+            background: rgba(11, 16, 23, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ccc;
+            padding: 1.25rem 1.5rem;
+            border-radius: 2px;
+            width: 100%;
+            text-align: left;
+            font-size: 1.2rem;
+            transition: all 0.3s;
+            cursor: pointer;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .option-btn:hover { border-color: #4fa3d1; background: rgba(79, 163, 209, 0.1); color: #fff; transform: translateX(5px); }
+        .option-btn.correct { border-color: #4fa3d1; background: rgba(79, 163, 209, 0.2); color: #fff; box-shadow: 0 0 20px rgba(79, 163, 209, 0.4); }
+        .option-btn.wrong { border-color: #e74c3c; background: rgba(231, 76, 60, 0.2); color: #ff6666; animation: shake 0.4s; }
+
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+        /* Follow-Up UI */
+        .followup-container { width: 100%; border-top: 1px dashed rgba(79, 163, 209, 0.3); padding-top: 1.5rem; margin-top: 2rem;}
+        .followup-btn { color: #4fa3d1; font-family: 'Share Tech Mono', monospace; font-size: 1.1rem; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 0.75rem; width: 100%; background: transparent; border: none; outline: none; text-transform: uppercase; letter-spacing: 2px; }
+        .followup-btn:hover { color: #fff; text-shadow: 0 0 10px rgba(79, 163, 209, 0.8); }
+        .followup-content { display: none; margin-top: 1.5rem; background: rgba(0, 0, 0, 0.6); padding: 1.5rem; border-left: 2px solid #4fa3d1; text-align: left; }
+        .followup-content.active { display: block; animation: fadeIn 0.4s ease-in; }
+
+        /* Whiteboard (Odradek Map) */
+        #whiteboard-container { transition: all 0.4s ease; z-index: 9999; opacity: 0; visibility: hidden; transform: scale(0.95); }
+        #whiteboard-container.active { visibility: visible !important; opacity: 1 !important; pointer-events: auto !important; transform: scale(1) !important; }
+        #whiteboard-text { user-select: text; }
+        .map-bg {
+            background-color: #0b1017;
+            background-image: 
+                linear-gradient(rgba(79, 163, 209, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(79, 163, 209, 0.1) 1px, transparent 1px);
+            background-size: 40px 40px;
+            color: #4fa3d1;
+            border: 2px solid #4fa3d1;
+        }
+
+        /* Sentence Builder */
+        .word-bank-btn { background: #0b1017; border: 1px solid rgba(212, 175, 55, 0.3); color: #d4af37; transition: all 0.2s; cursor: pointer; font-family: 'Share Tech Mono', monospace; }
+        .word-bank-btn:hover { background: rgba(212, 175, 55, 0.2); color: #fff; box-shadow: 0 0 15px rgba(212, 175, 55, 0.5); border-color: #d4af37;}
+        .word-bank-btn.hidden-word { opacity: 0; pointer-events: none; transform: scale(0.8); }
+
+        /* --- RESTAURAÇÃO: AVALANCHE DE LIKES --- */
+        .like-popup {
+            position: fixed;
+            color: #4ade80;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 40px; 
+            font-weight: bold;
+            pointer-events: none;
+            text-shadow: 0 0 20px #4ade80, 0 0 10px #000;
+            animation: floatUpLike 1.5s ease-out forwards;
+            z-index: 9999;
+        }
+        @keyframes floatUpLike { 
+            0% { transform: translateY(0) scale(1); opacity: 1; } 
+            100% { transform: translateY(-120px) scale(1.5); opacity: 0; } 
+        }
+
+        /* --- RESTAURAÇÃO: CAIXAS DE CARGA (SENTENCE BUILDER) --- */
+        .cargo-box {
+            background: linear-gradient(135deg, #d4af37, #a68420);
+            color: #000;
+            border: 2px solid #fff;
+            border-radius: 4px;
+            padding: 12px 28px;
+            font-weight: 900;
+            font-size: 1.6rem; 
+            box-shadow: 2px 4px 15px rgba(0,0,0,0.6), inset 0 0 10px rgba(255,255,255,0.4);
+            margin: -5px 2px;
+            position: relative;
+            text-transform: uppercase;
+            font-family: 'Share Tech Mono', monospace;
+            letter-spacing: 1px;
+            animation: dropIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: inline-block;
+        }
+        @keyframes dropIn {
+            from { transform: translateY(-40px) rotate(-10deg); opacity: 0; }
+            to { transform: translateY(0) rotate(0deg); opacity: 1; }
+        }
+        @keyframes fallDownCargo {
+            to { transform: translateY(200px) rotate(45deg); opacity: 0; }
+        }
+
+        /* --- RESTAURAÇÃO: SCANNER ODRADEK --- */
+        .odradek-sweep {
+            position: absolute; top: 0; left: 0; width: 100%; height: 6px;
+            background: rgba(212, 175, 55, 0.8);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 1);
+            animation: sweep 4s ease-in-out infinite alternate;
+            pointer-events: none; z-index: 50; border-radius: 4px;
+        }
+        @keyframes sweep { 0% { top: 0%; } 100% { top: 98%; } }
+
+        .nav-bar { width: 100%; max-w: 7xl; display: flex; justify-content: space-between; align-items: center; padding: 1.5rem 1rem 0 1rem; flex-shrink: 0; margin-top: auto; z-index: 20; }
+        .content-wrapper { flex: 1; display: flex; flex-col; align-items: center; justify-center; width: 100%; padding: 2rem 0; z-index: 10; position: relative; }
+        
+        /* Progress Bar */
+        #spiral-progress { transition: width 0.5s ease; }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col relative overflow-hidden">
+
+    <!-- TIMEFALL RAIN -->
+    <div id="rain-container"></div>
+
+    <!-- GLOBAL HUD -->
+    <div class="fixed top-0 w-full z-50 flex flex-col pointer-events-none">
+        <!-- Progress Bar -->
+        <div class="w-full h-1.5 bg-black">
+            <div id="spiral-progress" class="h-full bg-strandBlue shadow-[0_0_15px_#4fa3d1]" style="width: 0%"></div>
+        </div>
+        
+        <div class="p-4 flex justify-between items-center bg-tarDark/90 border-b border-strandBlue/20 backdrop-blur-md shadow-lg pointer-events-auto">
+            <!-- BB Pod & Status -->
+            <div class="flex items-center gap-3">
+                <div id="bb-pod-container" class="relative w-12 h-12 rounded-full border-2 border-chiralGold bg-yellow-600/20 flex items-center justify-center shadow-[0_0_15px_rgba(212,175,55,0.4)] overflow-hidden transition-colors duration-500 cursor-help" title="BB-28 Stress Level">
+                    <div id="bb-fluid" class="absolute bottom-0 w-full h-full bg-yellow-500/30 transition-all duration-700"></div>
+                    <i id="bb-icon" class="fas fa-baby text-chiralGold text-2xl z-10 drop-shadow-md transition-all duration-300 relative"></i>
+                </div>
+                <div class="flex flex-col hidden md:flex">
+                    <span class="font-tech text-gray-400 tracking-widest text-xs uppercase">BB-28 STATUS</span>
+                    <span id="bb-status-text" class="font-tech text-chiralGold tracking-widest text-sm font-bold">RELAXED</span>
+                </div>
+            </div>
+
+            <!-- Porter ID -->
+            <div class="flex-1 flex justify-center items-center gap-3">
+                <i class="fas fa-id-badge text-strandBlue hidden md:block"></i>
+                <span id="hud-player-name" class="font-tech text-white tracking-[0.2em] text-lg uppercase drop-shadow-[0_0_5px_#4fa3d1]">BRIDGES PORTER</span>
+            </div>
+
+            <!-- Likes (XP) & Controls -->
+            <div class="flex items-center gap-4 md:gap-6">
+                <div class="flex items-center gap-2 bg-black/80 px-4 py-2 rounded-sm border border-strandBlue/30">
+                    <i class="fas fa-thumbs-up text-strandBlue"></i>
+                    <span id="xp-counter" class="font-tech text-lg text-white tracking-widest transition-transform">0 LIKES</span>
+                </div>
+                <button onclick="toggleFullScreen()" class="text-gray-500 hover:text-white transition text-xl"><i id="fs-icon" class="fas fa-expand"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TEACHER TOOLS (BRIDGES TERMINAL) -->
+    <div id="dm-tools" class="fixed bottom-6 left-6 z-50">
+        <button onclick="toggleTools()" class="bg-tarDark text-strandBlue w-14 h-14 rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(79,163,209,0.4)] hover:scale-110 transition border border-strandBlue">
+            <i class="fas fa-terminal text-2xl"></i>
+        </button>
+        <div id="tools-panel" class="absolute bottom-20 left-0 panel-bridges p-6 w-80 hidden flex-col gap-4 border-l-2 border-l-strandBlue">
+            <h3 class="font-tech text-strandBlue text-lg tracking-widest border-b border-strandBlue/20 pb-2 text-center"><i class="fas fa-network-wired mr-2"></i> BRIDGES NETWORK</h3>
+            
+            <div class="flex justify-between items-center bg-black/80 p-3 rounded-sm border border-white/5">
+                <span id="timer-display" class="font-tech text-2xl text-white">00:00</span>
+                <div class="flex gap-4">
+                    <button onclick="startTimer()" class="text-gray-400 hover:text-strandBlue transition"><i class="fas fa-play"></i></button>
+                    <button onclick="stopTimer()" class="text-gray-400 hover:text-red-400 transition"><i class="fas fa-pause"></i></button>
+                    <button onclick="resetTimer()" class="text-gray-500 hover:text-white transition"><i class="fas fa-redo"></i></button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="addXP(10)" class="btn-porter py-2 text-sm text-center">+10 LIKES</button>
+                <button onclick="addXP(50)" class="btn-porter py-2 text-sm text-center">+50 LIKES</button>
+            </div>
+            
+            <button onclick="stressBB()" class="btn-porter btn-bt py-3 text-sm flex items-center justify-center gap-2">
+                <i class="fas fa-baby-carriage"></i> STRESS BB
+            </button>
+        </div>
+    </div>
+
+    <!-- WHITEBOARD (ODRADEK MAP) -->
+    <button onclick="toggleWhiteboard()" class="fixed bottom-6 right-6 z-50 bg-tarDark text-chiralGold w-14 h-14 rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(212,175,55,0.4)] hover:scale-110 transition border border-chiralGold">
+        <i class="fas fa-map-marked-alt text-2xl"></i>
+    </button>
+    <div id="whiteboard-container" class="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-8 md:p-16">
+        <div class="map-bg w-full h-full max-w-5xl p-8 md:p-12 shadow-[0_0_50px_rgba(79,163,209,0.2)] flex flex-col relative rounded-sm">
+            <div class="absolute top-6 right-6 flex gap-6">
+                <button onclick="clearWhiteboard()" class="text-strandBlue/50 hover:text-red-400 transition font-tech tracking-widest"><i class="fas fa-eraser mr-2"></i>WIPE DATA</button>
+                <button onclick="toggleWhiteboard()" class="text-strandBlue/50 hover:text-white transition"><i class="fas fa-times text-2xl"></i></button>
+            </div>
+            <h3 class="text-2xl font-tech text-strandBlue mb-6 border-b border-strandBlue/30 pb-4 tracking-widest uppercase"><i class="fas fa-satellite-dish mr-2"></i> Odradek Scanner Notes</h3>
+            <textarea id="whiteboard-text" class="w-full flex-1 bg-transparent outline-none text-2xl md:text-3xl font-tech text-white placeholder-strandBlue/30 resize-none" placeholder="Type delivery routes, grammar rules, or vocab here..."></textarea>
+        </div>
+    </div>
+
+    <!-- MAIN SCREEN CONTAINER (28 PAGES) -->
+    <div id="screen-container" class="flex-1 w-full h-full pt-20 pb-8 overflow-y-auto relative z-20">
+
+        <!-- PAGE 1: TEACHER'S GUIDE -->
+        <div id="page-1" class="screen active flex-col min-h-full px-6 w-full fade-in">
+            <div class="content-wrapper flex-col justify-center">
+                <div class="max-w-6xl w-full panel-bridges p-10 md:p-16 border-t-4 border-t-strandBlue">
+                    <h2 class="font-tech text-3xl md:text-5xl text-strandBlue mb-8 tracking-[0.2em] border-b border-strandBlue/20 pb-6 flex items-center gap-4 justify-center uppercase"><i class="fas fa-clipboard-list"></i> UCA Directive (Teacher)</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-10 text-lg md:text-xl font-main text-gray-300">
+                        <div class="space-y-6">
+                            <p class="flex items-start gap-4"><i class="fas fa-box text-strandBlue text-2xl mt-1"></i> <span><strong>The Mission:</strong> A1/A2 lesson based on Death Stranding. Focus heavily on making the student talk.</span></p>
+                            <p class="flex items-start gap-4"><i class="fas fa-baby text-chiralGold text-2xl mt-1"></i> <span><strong>BB Pod System:</strong> Grammar errors or bad choices increase the BB's Stress (Top Left). Too much stress triggers Autotoxemia!</span></p>
+                        </div>
+                        <div class="space-y-6">
+                            <p class="flex items-start gap-4"><i class="fas fa-book text-chiralGold text-2xl mt-1"></i> <span><strong>Grammar:</strong> <strong>Verb to be</strong>, <strong>Present Simple</strong> (Routines: I walk, he carries), and the slang <strong>"Ain't"</strong>.</span></p>
+                            <p class="flex items-start gap-4"><i class="fas fa-thumbs-up text-likeGreen text-2xl mt-1"></i> <span><strong>Likes Avalanche:</strong> Correct answers generate a satisfying avalanche of "Likes" on the screen, mimicking the game's reward loop.</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-bar">
+                <div class="w-32"></div>
+                <button onclick="nextPage()" class="btn-porter px-10 py-4 text-xl">CONNECT TO NETWORK <i class="fas fa-arrow-right ml-3"></i></button>
+            </div>
+        </div>
+
+        <!-- PAGE 2: COVER -->
+        <div id="page-2" class="screen flex-col min-h-full px-6 w-full slide-up">
+            <div class="content-wrapper flex-col justify-center">
+                <div class="max-w-5xl text-center w-full">
+                    <h3 class="font-tech tracking-[0.5em] text-strandBlue mb-6 text-xl uppercase">WolfStation Bridges</h3>
+                    <h1 class="font-main text-6xl md:text-[8rem] font-bold text-white mb-4 tracking-tighter drop-shadow-[0_5px_10px_rgba(0,0,0,0.8)] uppercase">DEATH STRANDING</h1>
+                    <p class="text-xl md:text-3xl font-tech text-gray-400 mb-12 font-light tracking-widest uppercase">"Tomorrow is in your hands."</p>
+                    
+                    <div class="flex flex-col items-center justify-center gap-6 mb-12">
+                        <div class="flex justify-center gap-4 flex-wrap">
+                            <span class="bg-black/60 border border-strandBlue/30 px-6 py-2 font-tech tracking-widest text-sm md:text-lg rounded-sm uppercase"><i class="fas fa-signal text-strandBlue mr-2"></i> A1 / A2</span>
+                            <span class="bg-black/60 border border-chiralGold/30 px-6 py-2 font-tech tracking-widest text-sm md:text-lg rounded-sm uppercase"><i class="fas fa-language text-chiralGold mr-2"></i> Verb to be & Present Simple</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-bar justify-center">
+                <button onclick="nextPage()" class="btn-porter px-16 md:px-20 py-6 text-xl md:text-2xl">INITIATE DELIVERY <i class="fas fa-box ml-4"></i></button>
+            </div>
+        </div>
+
+        <!-- PAGE 3: PORTER REGISTRATION -->
+        <div id="page-3" class="screen flex-col min-h-full px-6 w-full slide-left">
+            <div class="content-wrapper flex-col justify-center">
+                <h2 class="font-tech text-3xl md:text-5xl text-strandBlue mb-6 text-center tracking-widest uppercase drop-shadow-md">Porter Registration</h2>
+                <p class="text-xl text-gray-400 font-main text-center mb-8">"Select your persona to join the Bridges network."</p>
+                
+                <div class="max-w-4xl w-full flex flex-col items-center">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full mb-10">
+                        <div class="char-card p-6 rounded text-center border-2 border-transparent bg-black/60 cursor-pointer hover:border-strandBlue transition-all group" onclick="selectCharacter('SAM', this)">
+                            <i class="fas fa-box text-5xl text-gray-500 group-hover:text-strandBlue mb-4 transition-colors duration-300"></i>
+                            <h3 class="font-tech text-xl text-white tracking-widest uppercase">SAM</h3>
+                        </div>
+                        <div class="char-card p-6 rounded text-center border-2 border-transparent bg-black/60 cursor-pointer hover:border-strandBlue transition-all group" onclick="selectCharacter('FRAGILE', this)">
+                            <i class="fas fa-umbrella text-5xl text-gray-500 group-hover:text-strandBlue mb-4 transition-colors duration-300"></i>
+                            <h3 class="font-tech text-xl text-white tracking-widest uppercase">FRAGILE</h3>
+                        </div>
+                        <div class="char-card p-6 rounded text-center border-2 border-transparent bg-black/60 cursor-pointer hover:border-strandBlue transition-all group" onclick="selectCharacter('HEARTMAN', this)">
+                            <i class="fas fa-heartbeat text-5xl text-gray-500 group-hover:text-strandBlue mb-4 transition-colors duration-300"></i>
+                            <h3 class="font-tech text-xl text-white tracking-widest uppercase">HEARTMAN</h3>
+                        </div>
+                        <div class="char-card p-6 rounded text-center border-2 border-transparent bg-black/60 cursor-pointer hover:border-strandBlue transition-all group" onclick="selectCharacter('DEADMAN', this)">
+                            <i class="fas fa-user-shield text-5xl text-gray-500 group-hover:text-strandBlue mb-4 transition-colors duration-300"></i>
+                            <h3 class="font-tech text-xl text-white tracking-widest uppercase">DEADMAN</h3>
+                        </div>
+                    </div>
+
+                    <input type="text" id="player-name-input" placeholder="OR ENTER CUSTOM ID" class="bg-black/80 border border-strandBlue/50 text-white text-center font-tech text-xl py-3 px-6 uppercase tracking-widest focus:border-strandBlue focus:outline-none focus:shadow-[0_0_15px_rgba(79,163,209,0.3)] w-full max-w-md mb-8 rounded-sm">
+                </div>
+            </div>
+            <div class="nav-bar">
+                <button onclick="prevPage()" class="text-gray-500 hover:text-white uppercase font-tech tracking-widest transition text-lg"><i class="fas fa-arrow-left mr-2"></i> Back</button>
+                <button onclick="confirmRegistration()" class="btn-porter px-10 py-4 text-xl">CONFIRM ID <i class="fas fa-fingerprint ml-3"></i></button>
+            </div>
+        </div>
+
+        <!-- PAGE 4: WARM UP INTRO -->
+        <div id="page-4" class="screen flex-col min-h-full px-6 w-full slide-up">
+            <div class="content-wrapper flex-col justify-center text-center">
+                <h2 class="font-tech text-4xl md:text-5xl text-chiralGold mb-8 tracking-widest uppercase drop-shadow-md">PHASE I: CONNECTION</h2>
+                <div class="max-w-4xl w-full panel-chiral p-16 relative overflow-hidden flex flex-col items-center">
+                    <i class="fas fa-hands-helping text-8xl text-white/5 absolute top-10 right-10"></i>
+                    <p class="text-3xl md:text-4xl text-white font-main leading-relaxed mb-6">"In this world, people live isolated in bunkers. They rely on Porters for everything."</p>
+                    <p class="text-xl text-gray-400 font-tech tracking-widest uppercase">Let's talk about isolation.</p>
+                </div>
+            </div>
+            <div class="nav-bar">
+                <button onclick="prevPage()" class="text-gray-500 hover:text-white uppercase font-tech tracking-widest transition text-lg"><i class="fas fa-arrow-left mr-2"></i> Back</button>
+                <button onclick="nextPage()" class="btn-porter btn-chiral px-10 py-4 text-xl">PROCEED <i class="fas fa-arrow-right ml-3"></i></button>
+            </div>
+        </div>
+
+        <!-- PAGE 5: WARM UP 1 -->
+        <div id="page-5" class="screen flex-col min-h-full px-6 w-full slide-left">
+            <div class="content-wrapper flex-col justify-center">
+                <div class="max-w-5xl panel-chiral p-12 md:p-16 text-center w-full relative flex flex-col">
+                    <p class="text-xl text-chiralGold mb-6 font-tech uppercase tracking-widest border-b border-chiralGold/20 pb-2 inline-block mx-auto">Question I</p>
+                    <h3 class="font-main font-bold text-4xl md:text-6xl text-white mb-10 leading-tight">Do you prefer to work <span class="text-chiralGold">alone</span> or in a <span class="text-chiralGold">team</span>?</h3>
+                    <p class="text-xl md:text-2xl font-main text-gray-400 bg-black/40 inline-block px-6 py-3 border border-white/5 mx-auto mb-10 rounded">Why?</p>
+                    
+                    <div class="followup-container">
+                        <button class="followup-btn !text-chiralGold hover:!text-white" onclick="toggleFollowUp(this)"><i class="fas fa-chevron-down"></i> Teacher's Note</button>
+                        <div class="followup-content !border-l-chiralGold">
+                            <p class="text-gray-300 font-light text-xl leading-relaxed font-main"><strong class="text-chiralGold font-tech uppercase tracking-widest">Ask the student:</strong> "What is the most difficult part of being completely alone for a long time?"</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-bar">
+                <button onclick="prevPage()" class="text-gray-500 hover:text-white uppercase font-tech tracking-widest transition text-lg"><i class="fas fa-arrow-left mr-2"></i> Back</button>
+                <button onclick="nextPage()" class="btn-porter btn-chiral px-8 py-4 text-lg">NEXT <i class="fas fa-arrow-right ml-2"></i></button>
+            </div>
+        </div>
+
+        <!-- PAGE 6: WARM UP 2 -->
+        <div id="page-6" class="screen flex-col min-h-full px-6 w-full slide-left">
+            <div class="content-wrapper flex-col justify-center">
+                <div class="max-w-5xl panel-chiral p-12 md:p-16 text-center w-full relative flex flex-col">
+                    <p class="text-xl text-chiralGold mb-6 font-tech uppercase tracking-widest border-b border-chiralGold/20 pb-2 inline-block mx-auto">Question II</p>
+                    <h3 class="font-main font-bold text-4xl md:text-6xl text-white mb-10 leading-tight">In the game, Sam carries very <span class="text-gray-400">heavy boxes</span> on his back.</h3>
+                    <p class="text-xl md:text-2xl font-main text-gray-400 bg-black/40 inline-block px-6 py-3 border border-white/5 mx-auto mb-10 rounded">What is the heaviest "burden" or responsibility you carry in your real life?</p>
+                    
+                    <div class="followup-container">
+                        <button class="followup-btn !text-chiralGold hover:!text-white" onclick="toggleFollowUp(this)"><i class="fas fa-chevron-down"></i> Teacher's Note</button>
+                        <div class="followup-content !border-l-chiralGold">
+                            <p class="text-gray-300 font-light text-xl leading-relaxed font-main"><strong class="text-chiralGold font-tech uppercase tracking-widest">Ask the student:</strong> "How do you relieve stress when your responsibilities get too heavy?"</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-bar">
+                <button onclick="prevPage()" class="text-gray-500 hover:text-white uppercase font-tech tracking-widest transition text-lg"><i class="fas fa-arrow-left mr-2"></i> Back</button>
+                <button onclick="nextPage()" class="btn-porter btn-chiral px-8 py-4 text-lg">NEXT <i class="fas fa-arrow-right ml-2"></i></button>
+            </div>
+        </div>
+
+        <!-- PAGE 7: WARM UP 3 -->
+        <div id="page-7" class="screen flex-col min-h-full px-6 w-full slide-left">
+            <div class="content-wrapper flex-col justify-center">
+                <div class="max-w-5xl panel-chiral p-12 md:p-16 text-center w-full relative flex flex-col border-t-2 border-t-strandBlue">
+                    <p class="text-xl text-strandBlue mb-6 font-tech uppercase tracking-widest border-b border-strandBlue/20 pb-2 inline-block mx-auto">Question III</p>
+                    <h3 class="font-main font-bold text-4xl md:text-6xl text-white mb-10 leading-tight">Do you think the internet <span class="text-strandBlue">connects</span> us, or makes us more <span class="text-gray-500">isolated</span>?</h3>
+                    <p class="text-xl md:text-2xl font-main text-gray-400 bg-black/40 inline-block px-6 py-3 border border-white/5 mx-auto mb-10 rounded">Death Stranding is a metaphor for social media.</p>
+                    
+                    <div class="followup-container">
+                        <button class="followup-btn" onclick="toggleFollowUp(this)"><i class="fas fa-chevron-down"></i> Teacher's Note</button>
+                        <div class="followup-content">
+                            <p class="text-gray-300 font-light text-xl leading-relaxed font-main"><strong class="text-strandBlue font-tech uppercase tracking-widest">Ask the student:</strong> "If the internet disappeared tomorrow, what is the first thing you would do?"</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-bar">
+                <button onclick="prevPage()" class="text-gray-500 hover:text-white uppercase font-tech tracking-widest transition text-lg"><i class="fas fa-arrow-left mr-2"></i> Back</button>
+                <button onclick="nextPage()" class="btn-porter px-8 py-4 text-lg">PROCEED <i class="fas fa-arrow-right ml-2"></i></button>
+            </div>
+        </div>
+
+        <!-- PAGE 8: VOCABULARY (THE GEAR) -->
+        <div id="page-8" class="screen flex-col min-h-full px-6 w-full slide-up">
+            <div class="content-wrapper flex-col items-center">
+                <h2 class="font-tech text-3xl md:text-5xl text-chiralGold mb-8 tracking-widest uppercase text-center">PHASE II: THE GEAR</h2>
+                <p class="text-lg text-gray-400 font-main text-center mb-12">"A Porter needs tools to survive the delivery. Click to scan."</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl w-full">
+                    <div class="panel-chiral p-8 text-center cursor-pointer hover:border-chiralGold transition-colors group relative overflow-hidden" onclick="revealVocab(this, 'A tool used for climbing up or down.', 'I use the ladder to cross the river.')">
+                        <div class="odradek-sweep hidden"></div>
+                        <i class="fas fa-stream text-5xl text-gray-500 mb-6 group-hover:text-chiralGold transition-colors rotate-90 relative z-10"></i>
+                        <h3 class="font-tech text-xl text-white mb-2 tracking-widest uppercase relative z-10">Ladder</h3>
+                        <div class="vocab-hidden hidden mt-4 border-t border-gray-700/50 pt-4 relative z-10"></div>
+                    </div>
+                    <div class="panel-chiral p-8 text-center cursor-pointer hover:border-chiralGold transition-colors group relative overflow-hidden" onclick="revealVocab(this, 'A strong cord used to pull or tie things.', 'He throws the rope to climb down the mountain.')">
+                        <div class="odradek-sweep hidden"></div>
+                        <i class="fas fa-bezier-curve text-5xl text-gray-500 mb-6 group-hover:text-chiralGold transition-colors relative z-10"></i>
+                        <h3 class="font-tech text-xl text-white mb-2 tracking-widest uppercase relative z-10">Rope</h3>
+                        <div class="vocab-hidden hidden mt-4 border-t border-gray-700/50 pt-4 relative z-10"></div>
+                    </div>
+                    <div class="panel-chiral p-8 text-center cursor-pointer hover:border-chiralGold transition-colors group relative overflow-hidden" onclick="revealVocab(this, 'Boxes or packages that you carry.', 'Sam carries heavy cargo on his back.')">
+                        <div class="odradek-sweep hidden"></div>
+                        <i class="fas fa-box text-5xl text-gray-500 mb-6 group-hover:text-chiralGold transition-colors relative z-10"></i>
+                        <h3 class="font-tech text-xl text-white mb-2 tracking-widest uppercase relative z-10">Cargo</h3>
+                        <div class="vocab-hidden hidden mt-4 border-t border-gray-700/50 pt-4 relative z-10"></div>
+                    </div>
+                    <div class="panel-chiral p-8 text-center cursor-pointer hover:border-red-500 transition-colors group relative overflow-hidden" onclick="revealVocab(this, 'Medical item to restore health.', 'The BT attacked me! I need a blood bag.')">
+                        <div class="odradek-sweep hidden bg-red-500/80 shadow-[0_0_20px_#ef4444]"></div>
+                        <i class="fas fa-tint text-5xl text-gray-500 mb-6 group-hover:text-red-500 transition-colors relative z-10"></i>
+                        <h3 class="font-tech text-xl text-white mb-2 tracking-widest uppercase relative z-10">Blood Bag</h3>
+                        <div class="vocab-hidden hidden mt-4 border-t border-gray-700/50 pt-4 relative z-10"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-bar">
+                <button onclick="prevPage()" class="text-gray-500 hover:text-white uppercase font-tech tracking-widest transition text-lg"><i class="fas fa-arrow-left mr-2"></i> Back</button>
+                <button onclick="nextPage()" class="btn-porter btn-chiral px-10 py-4 text-xl">GEAR ACQUIRED <i class="fas fa-check ml-3"></i></button>
+            </div>
+        </div>
+
+        <!-- PAGE 9: SPEAKING TASK (LOADOUT) -->
+        <div id="page-9" class="screen flex-col min-h-full px-6 w-full slide-left">
+            <div class="content-wrapper flex-col justify-center">
+                <div class="w-full max-w-6xl">
+                    <h2 class="text-4xl font-tech text-strandBlue mb-10 text-center tracking-widest uppercase">PORTER LOADOUT</h2>
+                    <div class="panel-bridges p-12 md:p-16 w-full text-center bg-black/60 relative border-t-4 border-t-strandBlue">
+                        <i class="fas fa-weight-hanging text-6xl text-gray-600 mb-8"></i>
+                        <p class="text-xl text-gray-400 font-tech uppercase tracking-[0.3em] mb-6">Weight Limit Reached</p>
+                        <h3 class="text-3xl md:text-4xl text-white mb-10 font-main font-light leading-tight">Your backpack is too heavy. You can only take <strong class="text-strandBlue">TWO items</strong> with you on the next delivery.</h3>
+                        
+                        <div class="flex justify-center gap-6 mb-10">
+                            <span class="text-xl font-bold text-gray-300 bg-gray-800 px-4 py-2 rounded border border-gray-600">Ladder</span>
+                            <span class="text-xl font-bold text-gray-300 bg-gray-800 px-4 py-2 rounded border border-gray-600">Rope</span>
+                            <span class="text-xl font-bold text-gray-300 bg-gray-800 px-4 py-2 rounded border border-gray-600">Cargo</span>
+                            <span class="text-xl font-bold text-red-400 bg-gray-800 px-4 py-2 rounded border border-red-900">Blood Bag</span>
+                        </div>
+
+                        <div class="bg-black/80 p-8 rounded border border-gray-700 shadow-inner text-left">
+                            <i class="fas fa-microphone-alt text-3xl text-strandBlue mb-4"></i>
+                            <p class="text-2xl text-white font-main font-light">Tell your mentor <strong class="text-strandBlue font-bold">which two items</strong> you are taking, and <strong class="text-strandBlue font-bold">why</strong>.</p>
+                            <p class="text-gray-500 italic mt-2">Example: "I take the ladder because I need to cross rivers. I take the blood bag because..."</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-bar">
+                <button onclick="prevPage()" class="text-gray-500 hover:text-white uppercase font-tech tracking-widest transition text-lg"><i class="fas fa-arrow-left mr-2"></i> Back</button>
+                <button onclick="addXP(30); nextPage()" class="btn-porter px-10 py-4 text-xl">PROCEED <i class="fas fa-arrow-right ml-3"></i></button>
+            </div>
+        </div>
+
+        <!-- PAGE 10: GRAMMAR INTRO (AIN'T) -->
+        <div id="page-10" class="screen flex-col min-h-full px-6 w-full slide-up">
+            <div class="content-wrapper flex-col justify-center">
+                <h2 class="font-tech text-3xl md:text-5xl text-strandBlue mb-8 text-center tracking-widest uppercase">PHASE III: THE SLANG</h2>
+                
+                <div class="max-w-5xl w-full panel-bridges p-10 md:p-16">
+                    <div class="flex items-center justify-center gap-4 mb-10 border-b border-gray-700/50 pb-6">
+                        <i class="fas fa-comment-slash text-5xl text-strandBlue"></i>
+                        <h3 class="font-tech text-white text-3xl md:text-4xl uppercase tracking-widest">What is "Ain't"?</h3>
+                    </div>
+
+                    <p class="text-2xl text-gray-300 font-main mb-8 text-center leading-relaxed">
+                        In movies and games, you will hear the word <strong class="text-strandBlue font-bold text-3xl">AIN'T</strong>. <br>It is a very common informal word (slang) for the negative <strong class="text-white">Verb To Be</strong>.
+                    </p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center mt-10">
+                        <div class="bg-black/60 p-6 rounded border border-white/10">
+                            <p class="text-2xl text-gray-400 font-main mb-2">Am not</p>
+                            <i class="fas fa-arrow-down text-strandBlue mb-2"></i>
+                            <p class="text-3xl text-white font-tech font-bold text-strandBlue">Ain't</p>
+                            <p class="text-lg text-gray-500 mt-4 italic">"I ain't a hero."</p>
+                        </div>
+                        <div class="bg-black/60 p-6 rounded border border-white/10">
+                            <p class="text-2xl text-gray-400 font-main mb-2">Is not</p>
+                            <i class="fas fa-arrow-down text-strandBlue mb-2"></i>
+                            <p class="text-3xl text-white font-tech font-bold text-strandBlue">Ain't</p>
+                            <p class="text-lg text-gray-500 mt-4 italic">"He ain't here."</p>
+                        </div>
+                        <div class="bg-black/60 p-6 rounded border border-white/10">
+                            <p class="text-2xl text-gray-400 font-main mb-2">Are not</p>
+                            <i class="fas fa-arrow-down text-strandBlue mb-2"></i>
+                            <p class="text-3xl text-white font-tech font-bold text-strandBlue">Ain't</p>
+                            <p class="text-lg text-gray-500 mt-4 italic">"They ain't coming."</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-bar">
+                <button onclick="prevPage()" class="text-gray-500 hover:text-white uppercase font-tech tracking-widest transition text-lg"><i class="fas fa-arrow-left mr-2"></i> Back</button>
+                <button onclick="nextPage()" class="btn-porter px-10 py-4 text-xl">PRACTICE <i class="fas fa-arrow-right ml-3"></i></button>
+            </div>
+        </div>
+
+        <!-- PAGE 11: GRAMMAR PRACTICE (MATCHING) -->
+        <div id="page-11" class="screen flex-col min-h-full px-6 w-full slide-left">
+            <div class="content-wrapper flex-col justify-center">
+                <h2 class="font-tech text-3xl md:text-4xl text-strandBlue mb-6 text-center tracking-widest uppercase">TRANSLATE THE SLANG</h2>
+                <p class="text-gray-400 text-xl font-main mb-10 text-center">Connect the formal English to the informal "Ain't".</p>
+                
+                <div class="panel-bridges p-8 md:p-12 w-full max-w-6xl flex flex-col md:flex-row gap-6 relative bg-black/40 overflow-hidden">
+                    <div class="flex-1 flex flex-col gap-4 z-10">
+                        <button class="option-btn !mb-0" onclick="selectMatch(this, 'left', 1)">1. "I am not ready."</button>
+                        <button class="option-btn !mb-0" onclick="selectMatch(this, 'left', 2)">2. "She is not my friend."</button>
+                        <button class="option-btn !mb-0" onclick="selectMatch(this, 'left', 3)">3. "We are not lost."</button>
+                    </div>
+                    <div class="hidden md:flex flex-col items-center justify-center opacity-50 z-10">
+                        <i class="fas fa-link text-3xl text-strandBlue"></i>
+                    </div>
+                    <div class="flex-1 flex flex-col gap-4 z-10">
+                        <button class="option-btn !mb-0" onclick="selectMatch(this, 'right', 3)">"We ain't lost."</button>
+                        <button class="option-btn !mb-0" onclick="selectMatch(this, 'right', 1)">"I ain't ready."</button>
+                        <button class="option-btn !mb-0" onclick="selectMatch(this, 'right', 2)">"She ain't my friend."</button>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-bar">
+                <button onclick="prevPage()" class="text-gray-500 hover:text-white uppercase font-tech tracking-widest transition text-lg"><i class="fas fa-arrow-left mr-2"></i> Back</button>
+                <button onclick="nextPage()" class="btn-porter px-10 py-4 text-xl">CONTINUE <i class="fas fa-arrow-right ml-3"></i></button>
+            </div>
+        </div>
+
+        <!-- PAGE 12: GRAMMAR (PRESENT SIMPLE) -->
+        <div id="page-12" class="screen flex-col min-h-full px-6 w-full slide-up">
+            <div class="content-wrapper flex-col justify-center">
+                <h2 class="font-tech text-3xl md:text-5xl text-chiralGold mb-8 text-center tracking-widest uppercase">PHASE IV: THE ROUTINE</h2>
+                
+                <div class="max-w-5xl w-full panel-chiral p-10 md:p-16 border-t-4 border-t-chiralGold">
+                    <div class="flex items-center justify-center gap-4 mb-10 border-b border-gray-700/50 pb-6">
+                        <i class="fas fa-calendar-alt text-5xl text-chiralGold"></i>
+                        <h3 class="font-tech text-white text-3xl md:text-4xl uppercase tracking-widest">Present Simple</h3>
+                    </div>
+
+                    <p class="text-2xl text-gray-300 font-main mb-8 text-center leading-relaxed">
+                        We use the <strong class="text-chiralGold font-bold">Present Simple</strong> to talk about facts, habits, and routines. <br>A Porter's life is a routine.
+                    </p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                        <div class="bg-black/60 p-8 rounded border border-white/10 text-center shadow-inner">
+                            <p class="text-xl text-gray-400 font-tech tracking-widest uppercase mb-4 text-strandBlue">I / You / We / They</p>
+                            <p class="text-2xl text-white font-light italic">"I <strong class="text-strandBlue font-bold">walk</strong> every day."</p>
+                            <p class="text-2xl text-white font-light italic mt-4">"They <strong class="text-strandBlue font-bold">deliver</strong> cargo."</p>
+                        </div>
+                        <div class="bg-black/60 p-8 rounded border border-white/10 text-center shadow-inner">
+                            <p class="text-xl text-gray-400 font-tech tracking-widest uppercase mb-4 text-red-400">He / She / It (+s)</p>
+                            <p class="text-2xl text-white font-light italic">"He <strong class="text-red-400 font-bold">walks</strong> every day."</p>
+                            <p class="text-2xl text-white font-light italic mt-4">"She <strong class="text-red-400 font-bold">carries</strong> the box."</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-bar">
+                <button onclick="prevPage()" class="text-gray-500 hover:text-white uppercase font-tech tracking-widest transition text-lg"><i class="fas fa-arrow-left mr-2"></i> Back</button>
+                <button onclick="nextPage()" class="btn-porter btn-chiral px-12 py-5 text-xl">ENTER TRIALS <i class="fas fa-arrow-right ml-3"></i></button>
+            </div>
+        </div>
+
+        <!-- PAGE 13: GRAMMAR PRACTICE (SENTENCE BUILDER) -->
+        <div id="page-13" class="screen flex-col min-h-full px-6 w-full slide-left">
+            <div class="content-wrapper flex-col justify-center">
+                <h2 class="font-tech text-3xl md:text-4xl text-chiralGold mb-2 text-center tracking-widest uppercase">BUILD THE ROUTINE</h2>
+                <p id="routine-counter" class="text-chiralGold text-sm font-tech tracking-[0.3em] uppercase text-center mb-6">Routine 1 of 3</p>
+                <p class="text-gray-400 text-xl font-main mb-10 text-center">Click the boxes to stack the cargo in the correct grammatical order.</p>
+                
+                <div class="panel-chiral p-10 w-full max-w-6xl text-center bg-black/50 relative overflow-hidden">
+                    <div class="odradek-sweep hidden"></div>
+                    
+                    <div id="sentence-display" class="min-h-[7rem] border-b-2 border-gray-700 mb-10 flex flex-wrap gap-2 items-end justify-center p-4 transition-colors z-10 relative">
+                        <!-- Cargo boxes appear here -->
+                    </div>
+
+                    <div id="word-bank" class="flex flex-wrap justify-center gap-4 max-w-3xl mx-auto z-10 relative">
+                        <!-- Botões injetados por JS -->
+                    </div>
+                </div>
+            </div>
+            <div class="nav-bar">
+                <button onclick="prevPage()" class="text-gray-500 hover:text-white uppercase font-tech tracking-widest transition text-lg"><i class="fas fa-arrow-left mr-2"></i> Back</button>
+                <button onclick="resetWordBank()" class="text-gray-500 hover:text-white uppercase font-tech tracking-widest transition text-lg"><i class="fas fa-undo mr-2"></i> Reset</button>
+                <button onclick="nextPage()" class="btn-porter btn-chiral px-10 py-4 text-xl transition-all">CONTINUE <i class="fas fa-arrow-right ml-3"></i></button>
+            </div>
+        </div>
+
+        <!-- PAGE 14: PRE-VIDEO PROMPT -->
+        <div id="page-14" class="screen flex-col min-h-full px-6 w-full slide-up">
+            <div class="content-wrapper flex-col justify-center">
+                <div class="max-w-5xl panel-bridges p-16 md:p-20 text-center w-full relative">
+                    <i class="fas fa-video text-6xl md:text-7xl text-strandBlue mb-10 drop-shadow-[0_0_20px_#4fa3d1]"></i>
+                    <h2 class="font-tech font-bold text-3xl md:text-5xl text-white mb-8 leading-relaxed uppercase tracking-wider">
+                        "Watch the transmission."
+                    </h2>
+                    <p class="text-2xl md:text-3xl font-main text-gray-400 font-light">Pay attention to the main character. What does he do? Is he a soldier?</p>
+                </div>
+            </div>
+            <div class="nav-bar">
+                <button onclick="prevPage()" class="text-gray-500 hover:text-white uppercase font-tech tracking-widest transition text-lg"><i class="fas fa-arrow-left mr-2"></i> Back</button>
+                <button onclick="nextPage()" class="btn-porter px-12 py-5 text-xl">WATCH TRAILER <i class="fas fa-play ml-3"></i></button>
+            </div>
+        </div>
+
+        <!-- PAGE 15: THE VIDEO -->
+        <div id="page-15" class="screen flex-col min-h-full px-4 w-full slide-in">
+            <div class="content-wrapper flex-col justify-center">
+                <h2 class="font-tech text-3xl md:text-4xl text-strandBlue mb-8 tracking-widest text-center uppercase">PHASE V: THE FOOTAGE</h2>
+                <div class="w-full max-w-6xl panel-bridges p-4 shadow-[0_0_60px_rgba(79,163,209,0.15)]">
+                    <div class="relative pb-[56.25%] h-0 overflow-hidden border border-strandBlue/30 rounded bg-black">
+                        <iframe class="absolute top-0 left-0 w-full h-full" src="https://www.youtube.com/embed/Mpn-MC2B6Zc?rel=0" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-bar">
+                <button onclick="prevPage()" class="text-gray-500 hover:text-white uppercase font-tech tracking-widest transition text-lg"><i class="fas fa-arrow-left mr-2"></i> Back</button>
+                <button onclick="nextPage()" class="btn-porter px-12 py-5 text-xl">TRANSMISSION OVER <i class="fas fa-forward ml-3"></i></button>
+            </div>
+        </div>
+
+        <!-- PAGE 16: POST-VIDEO 1 -->
+        <div id="page-16" class="screen flex-col min-h-full px-6 w-full slide-left">
+            <div class="content-wrapper flex-col justify-center">
+                <div class="max-w-5xl panel-bridges p-12 md:p-16 text-center border-t-4 border-t-strandBlue w-full">
+                    <i class="fas fa-eye text-6xl text-strandBlue mb-8 drop-shadow-[0_0_20px_#4fa3d1]"></i>
+                    <h3 class="text-3xl md:text-5xl text-white mb-10 font-main leading-relaxed bg-black/40 p-8 rounded border border-white/5 font-bold">"What did you see?"</h3>
+                    <p class="text-2xl md:text-3xl text-gray-400 mb-10 font-light leading-relaxed">
+                        Based on the trailer, is the world full of people, or is it empty and dangerous?
+                    </p>
+                    
+                    <div class="followup-container text-left flex flex-col">
+                        <button class="followup-btn" onclick="toggleFollowUp(this)"><i class="fas fa-chevron-down"></i> Speaking Task</button>
+                        <div class="followup-content">
+                            <p class="text-gray-300 text-xl leading-relaxed font-main"><strong class="text-strandBlue font-tech tracking-widest uppercase">Teacher:</strong> "Ask the student to name 3 things they saw in the video (e.g., mountains, a baby, ghosts)."</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-bar">
+                <button onclick="prevPage()" class="text-gray-500 hover:text-white uppercase font-tech tracking-widest transition text-lg"><i class="fas fa-arrow-left mr-2"></i> Back</button>
+                <button onclick="nextPage()" class="btn-porter px-10 py-4 text-xl transition-all">NEXT <i class="fas fa-arrow-right ml-3"></i></button>
+            </div>
+        </div>
+
+        <!-- PAGE 17: SCRIPT ANALYSIS 1 -->
+        <div id="page-17" class="screen flex-col min-h-full px-6 w-full slide-left">
+            <div class="content-wrapper flex-col justify-center">
+                <div class="max-w-5xl panel-bridges p-12 md:p-16 text-center border-t-4 border-t-chiralGold w-full">
+                    <i class="fas fa-box-open text-6xl text-chiralGold mb-8 drop-shadow-[0_0_20px_#d4af37]"></i>
+                    <h3 class="text-3xl md:text-5xl text-white mb-10 font-main leading-relaxed bg-black/40 p-8 rounded border border-white/5 font-bold">"I make deliveries. That's all."</h3>
+                    <p class="text-2xl md:text-3xl text-gray-400 mb-10 font-light leading-relaxed">
+                        What tense is "I make"? Is it an action happening now, or a routine/job?
+                    </p>
+                    
+                    <div class="followup-container text-left flex flex-col">
+                        <button class="followup-btn !text-chiralGold hover:!text-white" onclick="toggleFollowUp(this)"><i class="fas fa-chevron-down"></i> Grammar Note</button>
+                        <div class="followup-content !border-l-chiralGold">
+                            <p class="text-gray-300 text-xl leading-relaxed font-main"><strong class="text-chiralGold font-tech tracking-widest uppercase">Teacher:</strong> "This is the <strong class="text-white">Present Simple</strong>. We use it for routines, facts, and jobs. Ask the student: 'What do you do? I make...'"</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-bar">
+                <button onclick="prevPage()" class="text-gray-500 hover:text-white uppercase font-tech tracking-widest transition text-lg"><i class="fas fa-arrow-left mr-2"></i> Back</button>
+                <button onclick="nextPage()" class="btn-porter btn-chiral px-10 py-4 text-xl transition-all">NEXT <i class="fas fa-arrow-right ml-3"></i></button>
+            </div>
+        </div>
+
+        <!-- PAGE 18: SCRIPT ANALYSIS 2 (AIN'T) -->
+        <div id="page-18" class="screen flex-col min-h-full px-6 w-full slide-left">
+            <div class="content-wrapper flex-col justify-center">
+                <div class="max-w-5xl panel-bridges p-12 md:p-16 text-center border-t-4 border-t-red-500 w-full">
+                    <i class="fas fa-user-shield text-6xl text-red-500 mb-8 drop-shadow-[0_0_20px_#e74c3c]"></i>
+                    <h3 class="text-3xl md:text-5xl text-white mb-10 font-main leading-relaxed bg-black/40 p-8 rounded border border-white/5 font-bold">"I ain't a hero."</h3>
+                    <p class="text-2xl md:text-3xl text-gray-400 mb-10 font-light leading-relaxed">
+                        Sam says he is not a hero. If you had to face invisible ghosts in the rain to deliver packages, would you feel like a hero or just a worker?
+                    </p>
+                    
+                    <div class="followup-container text-left flex flex-col">
+                        <button class="followup-btn !text-red-500 hover:!text-white" onclick="toggleFollowUp(this)"><i class="fas fa-chevron-down"></i> Discussion</button>
+                        <div class="followup-content !border-l-red-500">
+                            <p class="text-gray-300 text-xl leading-relaxed font-main"><strong class="text-red-500 font-tech tracking-widest uppercase">Ask the student:</strong> "What makes someone a real hero? Is it having superpowers, or just doing a hard job to help people?"</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-bar">
+                <button onclick="prevPage()" class="text-gray-500 hover:text-white uppercase font-tech tracking-widest transition text-lg"><i class="fas fa-arrow-left mr-2"></i> Back</button>
+                <button onclick="nextPage()" class="btn-porter btn-bt px-10 py-4 text-xl transition-all">ENTER OPINION <i class="fas fa-balance-scale ml-3"></i></button>
+            </div>
+        </div>
+
+        <!-- PAGE 19: OPINION SPECTRUM -->
+        <div id="page-19" class="screen flex-col min-h-full px-6 w-full slide-left">
+            <div class="content-wrapper flex-col justify-center">
+                <div class="w-full max-w-6xl">
+                    <h2 class="text-4xl font-tech text-strandBlue mb-10 text-center tracking-[0.2em]">ETHICAL PROTOCOL</h2>
+                    <div class="panel-bridges p-12 md:p-16 w-full text-center bg-black/60 relative">
+                        <p class="text-xl text-gray-400 font-tech uppercase tracking-[0.3em] mb-6">Where do you stand?</p>
+                        <h3 class="text-3xl md:text-4xl text-white mb-16 font-main font-light leading-tight">"It is better to stay safe and isolated in your room than to go outside and connect with people in a dangerous world."</h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full font-tech uppercase tracking-widest text-sm">
+                            <button onclick="selectStance(this)" data-stance="strong-agree" class="bg-black/80 py-4 rounded border border-gray-700 text-gray-400 hover:border-strandBlue hover:text-white transition">Strongly Agree</button>
+                            <button onclick="selectStance(this)" data-stance="agree" class="bg-black/80 py-4 rounded border border-gray-700 text-gray-400 hover:border-strandBlue hover:text-white transition">Agree</button>
+                            <button onclick="selectStance(this)" data-stance="disagree" class="bg-black/80 py-4 rounded border border-gray-700 text-gray-400 hover:border-red-500 hover:text-white transition">Disagree</button>
+                            <button onclick="selectStance(this)" data-stance="strong-disagree" class="bg-black/80 py-4 rounded border border-gray-700 text-gray-400 hover:border-red-500 hover:text-white transition">Strongly Disagree</button>
+                        </div>
+
+                        <div id="stance-followup" class="hidden mt-12 bg-black/80 p-8 rounded border border-gray-700 fade-in text-left">
+                            <i class="fas fa-microphone-alt text-3xl text-strandBlue mb-4"></i>
+                            <p class="text-2xl text-white font-main font-light">Coordinates locked. <strong class="text-strandBlue font-bold">Defend your stance!</strong> Provide your reasoning to the UCA.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-bar">
+                <button onclick="prevPage()" class="text-gray-500 hover:text-white uppercase font-tech tracking-widest transition text-lg"><i class="fas fa-arrow-left mr-2"></i> Back</button>
+                <button onclick="nextPage()" class="btn-porter px-10 py-4 text-xl">ENTER RPG <i class="fas fa-map-marked ml-3"></i></button>
+            </div>
+        </div>
+
+        <!-- PAGE 20: RPG INTRO -->
+        <div id="page-20" class="screen flex-col min-h-full px-6 w-full slide-up">
+            <div class="content-wrapper flex-col justify-center">
+                <div class="w-full max-w-6xl">
+                    <h2 class="text-5xl md:text-6xl font-tech text-strandBlue mb-10 text-center tracking-widest uppercase drop-shadow-[0_0_15px_rgba(79,163,209,0.5)]">PHASE VI: THE DELIVERY</h2>
+                    <div class="panel-bridges p-16 w-full text-center border-t-4 border-t-strandBlue bg-[radial-gradient(ellipse_at_center,rgba(79,163,209,0.1)_0%,transparent_70%)] relative overflow-hidden">
+                        <i class="fas fa-route text-9xl text-white/5 absolute -bottom-10 -right-10"></i>
+                        <p class="text-3xl text-white mb-6 leading-relaxed font-main font-bold uppercase">
+                            ORDER 14: MEDICAL SUPPLIES TO PORT KNOT CITY.
+                        </p>
+                        <p class="text-2xl text-gray-300 mb-8 leading-relaxed font-main font-light">
+                            "You are a Porter. You have 3 boxes of cargo on your back. To deliver them safely, you must answer the grammar challenges correctly. Errors will stress your BB!"
+                        </p>
+                        <button onclick="nextPage()" class="btn-porter px-12 py-5 text-2xl">START JOURNEY <i class="fas fa-walking ml-4"></i></button>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-bar">
+                <button onclick="prevPage()" class="text-gray-500 hover:text-white uppercase font-tech tracking-widest transition text-lg"><i class="fas fa-arrow-left mr-2"></i> Back</button>
+                <div class="w-32"></div>
+            </div>
+        </div>
+
+        <!-- PAGE 21: RPG NODE 1 (THE RIVER) -->
+        <div id="page-21" class="screen flex-col min-h-full px-6 w-full fade-in">
+            <div class="content-wrapper flex-col justify-center">
+                <div class="w-full max-w-7xl panel-bridges p-0 flex flex-col md:flex-row overflow-hidden border-strandBlue border-2">
+                    <div class="w-full md:w-1/3 bg-black/90 p-12 flex flex-col items-center justify-center relative border-b md:border-b-0 md:border-r border-strandBlue/30">
+                        <i class="fas fa-water text-6xl text-strandBlue mb-6"></i>
+                        <h3 class="font-tech text-3xl text-white mt-4 tracking-widest text-center uppercase">The Deep River</h3>
+                    </div>
+                    <div class="w-full md:w-2/3 p-10 md:p-14 bg-black/60 relative">
+                        <p class="text-2xl md:text-3xl text-gray-200 italic mb-10 border-l-4 border-strandBlue pl-6 font-main">"You reach a deep river. The water is moving fast. You must use the verb To Be correctly to cross safely."</p>
+                        <div class="bg-black/80 p-6 rounded border border-gray-700 mb-6">
+                            <p class="text-3xl text-white font-bold font-main">"The river _______ very dangerous."</p>
+                        </div>
+                        <div class="flex flex-col gap-4">
+                            <button onclick="rpgSelect(this, 1)" class="btn-porter !text-gray-300 !bg-black/60 !border-gray-700 hover:!border-strandBlue py-5 text-left px-6 text-xl font-main"><span class="text-strandBlue font-bold mr-4 font-tech">A.</span> is</button>
+                            <button onclick="rpgSelect(this, 0)" class="btn-porter !text-gray-300 !bg-black/60 !border-gray-700 hover:!border-strandBlue py-5 text-left px-6 text-xl font-main"><span class="text-strandBlue font-bold mr-4 font-tech">B.</span> are</button>
+                            <button onclick="rpgSelect(this, 0)" class="btn-porter !text-gray-300 !bg-black/60 !border-gray-700 hover:!border-strandBlue py-5 text-left px-6 text-xl font-main"><span class="text-strandBlue font-bold mr-4 font-tech">C.</span> am</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-bar">
+                <button onclick="prevPage()" class="text-gray-500 hover:text-white uppercase font-tech tracking-widest transition text-lg"><i class="fas fa-arrow-left mr-2"></i> Back</button>
+                <button onclick="nextPage()" class="btn-porter px-10 py-4 text-xl transition-all">ADVANCE <i class="fas fa-arrow-right ml-3"></i></button>
+            </div>
+        </div>
+
+        <!-- PAGE 22: RPG NODE 2 (MULE CAMP) -->
+        <div id="page-22" class="screen flex-col min-h-full px-6 w-full fade-in">
+            <div class="content-wrapper flex-col justify-center">
+                <div class="w-full max-w-7xl panel-bridges p-0 flex flex-col md:flex-row overflow-hidden border-odradekOrange border-2">
+                    <div class="w-full md:w-1/3 bg-black/90 p-12 flex flex-col items-center justify-center relative border-b md:border-b-0 md:border-r border-odradekOrange/30">
+                        <i class="fas fa-running text-6xl text-odradekOrange mb-6"></i>
+                        <h3 class="font-tech text-3xl text-white mt-4 tracking-widest text-center uppercase">MULE Camp</h3>
+                    </div>
+                    <div class="w-full md:w-2/3 p-10 md:p-14 bg-black/60 relative">
+                        <p class="text-2xl md:text-3xl text-gray-200 italic mb-10 border-l-4 border-odradekOrange pl-6 font-main">"A group of thieves called MULEs spots you. Their only routine is stealing cargo."</p>
+                        <div class="bg-black/80 p-6 rounded border border-gray-700 mb-6">
+                            <p class="text-3xl text-white font-bold font-main">"They _______ cargo every day."</p>
+                        </div>
+                        <div class="flex flex-col gap-4">
+                            <button onclick="rpgSelect(this, 0)" class="btn-porter !text-gray-300 !bg-black/60 !border-gray-700 hover:!border-odradekOrange hover:!text-white py-5 text-left px-6 text-xl font-main"><span class="text-odradekOrange font-bold mr-4 font-tech">A.</span> stealing</button>
+                            <button onclick="rpgSelect(this, 1)" class="btn-porter !text-gray-300 !bg-black/60 !border-gray-700 hover:!border-odradekOrange hover:!text-white py-5 text-left px-6 text-xl font-main"><span class="text-odradekOrange font-bold mr-4 font-tech">B.</span> steal</button>
+                            <button onclick="rpgSelect(this, 0)" class="btn-porter !text-gray-300 !bg-black/60 !border-gray-700 hover:!border-odradekOrange hover:!text-white py-5 text-left px-6 text-xl font-main"><span class="text-odradekOrange font-bold mr-4 font-tech">C.</span> steals</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-bar">
+                <button onclick="prevPage()" class="text-gray-500 hover:text-white uppercase font-tech tracking-widest transition text-lg"><i class="fas fa-arrow-left mr-2"></i> Back</button>
+                <button onclick="nextPage()" class="btn-porter px-10 py-4 text-xl transition-all !border-odradekOrange !text-odradekOrange hover:!bg-odradekOrange/20 hover:!text-white">ADVANCE <i class="fas fa-arrow-right ml-3"></i></button>
+            </div>
+        </div>
+
+        <!-- PAGE 23: RPG NODE 3 (ROUTINE) -->
+        <div id="page-23" class="screen flex-col min-h-full px-6 w-full fade-in">
+            <div class="content-wrapper flex-col justify-center">
+                <div class="w-full max-w-7xl panel-bridges p-0 flex flex-col md:flex-row overflow-hidden border-chiralGold border-2">
+                    <div class="w-full md:w-1/3 bg-black/90 p-12 flex flex-col items-center justify-center relative border-b md:border-b-0 md:border-r border-chiralGold/30">
+                        <i class="fas fa-mountain text-6xl text-chiralGold mb-6"></i>
+                        <h3 class="font-tech text-3xl text-white mt-4 tracking-widest text-center uppercase">The Long Climb</h3>
+                    </div>
+                    <div class="w-full md:w-2/3 p-10 md:p-14 bg-black/60 relative">
+                        <p class="text-2xl md:text-3xl text-gray-200 italic mb-10 border-l-4 border-chiralGold pl-6 font-main">"Walking up the mountain is hard. You explain your job to a hologram to stay sane."</p>
+                        <div class="bg-black/80 p-6 rounded border border-gray-700 mb-6">
+                            <p class="text-3xl text-white font-bold font-main">"I _______ heavy boxes every day. That's my job."</p>
+                        </div>
+                        <div class="flex flex-col gap-4">
+                            <button onclick="rpgSelect(this, 0)" class="btn-porter !text-gray-300 !bg-black/60 !border-gray-700 hover:!border-chiralGold hover:!text-white py-5 text-left px-6 text-xl font-main"><span class="text-chiralGold font-bold mr-4 font-tech">A.</span> carries</button>
+                            <button onclick="rpgSelect(this, 1)" class="btn-porter !text-gray-300 !bg-black/60 !border-gray-700 hover:!border-chiralGold hover:!text-white py-5 text-left px-6 text-xl font-main"><span class="text-chiralGold font-bold mr-4 font-tech">B.</span> carry</button>
+                            <button onclick="rpgSelect(this, 0)" class="btn-porter !text-gray-300 !bg-black/60 !border-gray-700 hover:!border-chiralGold hover:!text-white py-5 text-left px-6 text-xl font-main"><span class="text-chiralGold font-bold mr-4 font-tech">C.</span> carrying</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-bar">
+                <button onclick="prevPage()" class="text-gray-500 hover:text-white uppercase font-tech tracking-widest transition text-lg"><i class="fas fa-arrow-left mr-2"></i> Back</button>
+                <button onclick="nextPage()" class="btn-porter btn-chiral px-10 py-4 text-xl transition-all">ADVANCE <i class="fas fa-arrow-right ml-3"></i></button>
+            </div>
+        </div>
+
+        <!-- PAGE 24: RPG NODE 4 (PRIVATE ROOM) -->
+        <div id="page-24" class="screen flex-col min-h-full px-6 w-full fade-in">
+            <div class="content-wrapper flex-col justify-center">
+                <div class="w-full max-w-7xl panel-bridges p-0 flex flex-col md:flex-row overflow-hidden border-strandBlue border-2">
+                    <div class="w-full md:w-1/3 bg-black/90 p-12 flex flex-col items-center justify-center relative border-b md:border-b-0 md:border-r border-strandBlue/30">
+                        <i class="fas fa-bed text-6xl text-strandBlue mb-6"></i>
+                        <h3 class="font-tech text-3xl text-white mt-4 tracking-widest text-center uppercase">Safe House</h3>
+                    </div>
+                    <div class="w-full md:w-2/3 p-10 md:p-14 bg-black/60 relative">
+                        <p class="text-2xl md:text-3xl text-gray-200 italic mb-10 border-l-4 border-strandBlue pl-6 font-main">"You find an underground bunker. Your stamina is low. You need to ask the system for access."</p>
+                        
+                        <div class="bg-black/80 p-8 rounded border border-gray-700 mb-6 text-center shadow-inner">
+                            <i class="fas fa-microphone text-4xl text-strandBlue mb-4"></i>
+                            <p class="text-2xl text-white font-bold font-main mb-4">Speak aloud to the terminal:</p>
+                            <p class="text-gray-400 italic text-xl">"I am tired. I need to sleep."</p>
+                        </div>
+
+                        <button onclick="addXP(50); unlockNext(this)" class="btn-porter w-full py-6 text-2xl">I SPOKE TO THE TERMINAL <i class="fas fa-check ml-3"></i></button>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-bar">
+                <button onclick="prevPage()" class="text-gray-500 hover:text-white uppercase font-tech tracking-widest transition text-lg"><i class="fas fa-arrow-left mr-2"></i> Back</button>
+                <button onclick="nextPage()" class="btn-porter px-10 py-4 text-xl transition-all">REST <i class="fas fa-arrow-right ml-3"></i></button>
+            </div>
+        </div>
+
+        <!-- PAGE 25: RPG NODE 5 (BT ENCOUNTER - HOLD BREATH) -->
+        <div id="page-25" class="screen flex-col min-h-full px-6 w-full fade-in">
+            <div class="content-wrapper flex-col justify-center">
+                <div class="w-full max-w-7xl panel-bridges p-0 flex flex-col md:flex-row overflow-hidden border-red-500 border-2 shadow-[0_0_30px_rgba(231,76,60,0.3)]">
+                    <div class="w-full md:w-1/3 bg-black/90 p-12 flex flex-col items-center justify-center relative border-b md:border-b-0 md:border-r border-red-500/30">
+                        <i class="fas fa-ghost text-7xl text-red-500 mb-6 animate-pulse"></i>
+                        <h3 class="font-tech text-3xl text-white mt-4 tracking-widest text-center uppercase">BT Area</h3>
+                    </div>
+                    <div class="w-full md:w-2/3 p-10 md:p-14 bg-black/60 relative">
+                        <p id="b25-text" class="text-2xl md:text-3xl text-gray-200 italic mb-6 border-l-4 border-red-500 pl-6 font-main">"It starts to rain. Your scanner spins wildly. The invisible ghosts are here! Whisper the correct sentence before you run out of breath!"</p>
+                        
+                        <div id="breath-bar-container" class="w-full h-4 bg-gray-800 rounded mb-8 border border-gray-600 overflow-hidden">
+                            <div id="breath-bar" class="h-full bg-blue-400 w-full transition-all"></div>
+                        </div>
+
+                        <div class="bg-black/80 p-6 rounded border border-gray-700 mb-6">
+                            <p class="text-3xl text-white font-bold font-main">"I _______ afraid of ghosts. I can do this."</p>
+                        </div>
+                        <div class="flex flex-col gap-4">
+                            <button onclick="rpgSelectTimed(this, 1)" class="option-btn !mb-0 font-main text-2xl font-bold"><span class="text-red-500 mr-4 font-tech">A.</span> ain't (am not)</button>
+                            <button onclick="rpgSelectTimed(this, 0)" class="option-btn !mb-0 font-main text-2xl font-bold"><span class="text-red-500 mr-4 font-tech">B.</span> doesn't</button>
+                            <button onclick="rpgSelectTimed(this, 0)" class="option-btn !mb-0 font-main text-2xl font-bold"><span class="text-red-500 mr-4 font-tech">C.</span> don't</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-bar">
+                <button onclick="prevPage()" class="text-gray-500 hover:text-white uppercase font-tech tracking-widest transition text-lg"><i class="fas fa-arrow-left mr-2"></i> Back</button>
+                <button onclick="nextPage()" class="btn-porter btn-bt px-10 py-4 text-xl transition-all">SNEAK AWAY <i class="fas fa-shoe-prints ml-3"></i></button>
+            </div>
+        </div>
+
+        <!-- PAGE 26: RPG NODE 6 (THE BOSS/VOICE) -->
+        <div id="page-26" class="screen flex-col min-h-full px-6 w-full fade-in">
+            <div class="content-wrapper flex-col justify-center">
+                <div class="w-full max-w-6xl">
+                    <h2 class="text-5xl font-tech text-red-500 mb-8 text-center tracking-[0.2em] drop-shadow-[0_0_10px_rgba(231,76,60,0.5)]">FINAL PUSH</h2>
+                    <div class="w-full panel-bridges p-16 text-center border-t-4 border-t-red-500 bg-black/70 shadow-[0_0_60px_rgba(231,76,60,0.2)]">
+                        <i class="fas fa-satellite-dish text-7xl text-red-500 mb-10 animate-pulse drop-shadow-[0_0_25px_rgba(231,76,60,0.9)]"></i>
+                        <p class="text-3xl text-white mb-10 leading-relaxed font-main">A giant BT appears! You need backup. You open your Codec radio.</p>
+                        <div class="bg-black/90 p-10 rounded border border-gray-700 mb-10 shadow-inner text-left">
+                            <p class="text-2xl text-red-500 font-tech uppercase mb-4 tracking-widest"><i class="fas fa-broadcast-tower mr-3"></i> TRANSMIT A MESSAGE:</p>
+                            <p class="text-xl text-gray-300 font-main font-light mb-4">Use the <strong class="text-white">Present Simple</strong> to tell headquarters what the monster does.</p>
+                            <p class="text-lg text-gray-500 font-main italic">Example: "Help! The monster eats cargo! It destroys everything!"</p>
+                        </div>
+                        <button onclick="addXP(100); unlockNext(this)" class="btn-porter btn-bt px-12 py-5 text-2xl w-full md:w-auto">TRANSMIT AUDIO <i class="fas fa-paper-plane ml-3"></i></button>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-bar">
+                <button onclick="prevPage()" class="text-gray-500 hover:text-white uppercase font-tech tracking-widest transition text-lg"><i class="fas fa-arrow-left mr-2"></i> Back</button>
+                <button onclick="nextPage()" class="btn-porter px-10 py-4 text-xl transition-all">ENTER FACILITY <i class="fas fa-door-open ml-3"></i></button>
+            </div>
+        </div>
+
+        <!-- PAGE 27: ENDING -->
+        <div id="page-27" class="screen flex-col min-h-full px-6 w-full slide-up">
+            <div class="content-wrapper flex-col justify-center">
+                <div class="w-full max-w-6xl text-center flex flex-col items-center">
+                    <i class="fas fa-city text-[8rem] text-chiralGold mb-10 drop-shadow-[0_0_40px_rgba(212,175,55,0.6)]"></i>
+                    <h2 class="text-6xl md:text-8xl font-main font-bold text-white mb-8 tracking-tighter uppercase drop-shadow-[0_5px_10px_rgba(0,0,0,0.8)]">DELIVERY COMPLETE</h2>
+                    <div class="panel-chiral p-10 md:p-14 bg-black/60 border border-chiralGold/30 max-w-4xl w-full shadow-inner">
+                        <p class="text-2xl md:text-3xl text-gray-200 font-main font-light leading-relaxed">
+                            You survived the Timefall and reached Port Knot City! Your grammar connections helped rebuild America!
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-bar">
+                <button onclick="prevPage()" class="text-gray-500 hover:text-white uppercase font-tech tracking-widest transition text-lg"><i class="fas fa-arrow-left mr-2"></i> Back</button>
+                <button onclick="nextPage()" class="btn-porter btn-chiral px-12 py-5 text-2xl shadow-[0_0_30px_rgba(212,175,55,0.4)]">EVALUATION <i class="fas fa-star ml-3"></i></button>
+            </div>
+        </div>
+
+        <!-- PAGE 28: MISSION COMPLETE -->
+        <div id="page-28" class="screen flex-col min-h-full px-6 w-full slide-up">
+            <div class="content-wrapper flex-col justify-center">
+                <div class="w-full max-w-6xl text-center flex flex-col items-center">
+                    <h1 class="text-6xl md:text-7xl font-tech font-bold mb-10 uppercase tracking-widest text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.5)]">
+                        CONNECTION ESTABLISHED
+                    </h1>
+                    
+                    <div class="panel-bridges p-12 md:p-16 mb-12 w-full max-w-3xl border-2 border-strandBlue bg-black/80 shadow-[0_0_60px_rgba(0,0,0,0.8)]">
+                        <h3 class="text-gray-400 font-tech uppercase tracking-widest text-xl mb-8">Likes Received</h3>
+                        <p id="final-xp" class="text-8xl md:text-[8rem] leading-none font-tech text-strandBlue font-bold drop-shadow-[0_0_20px_#4fa3d1]">0</p>
+                        <div class="mt-10 border-t border-white/10 pt-8">
+                            <p class="text-3xl text-gray-300 font-main font-light italic tracking-wide">"Keep on keeping on."</p>
+                        </div>
+                    </div>
+
+                    <div class="panel-bridges p-8 md:p-10 w-full max-w-5xl bg-black/90 border border-gray-800 shadow-lg flex flex-col md:flex-row items-center gap-8 text-left">
+                        <i class="fas fa-baby text-6xl text-chiralGold drop-shadow-[0_0_15px_rgba(212,175,55,0.4)]"></i>
+                        <div>
+                            <h3 class="text-2xl font-tech text-white mb-2 tracking-widest uppercase">BB-28 SYSTEM</h3>
+                            <p class="text-gray-400 text-xl font-main font-light leading-relaxed">"Master, would you like me to generate the homework datapad based on today's delivery?"</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-bar justify-center mt-6">
+                <button onclick="location.reload()" class="text-gray-500 hover:text-white uppercase font-tech text-lg tracking-widest transition flex items-center gap-3 bg-black/60 px-8 py-4 rounded border border-gray-800 hover:border-gray-500 hover:scale-105"><i class="fas fa-redo"></i> Restart Order</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- FULLSCREEN ---
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => console.log(err));
+                const icon = document.getElementById('fs-icon');
+                if(icon) icon.classList.replace('fa-expand', 'fa-compress');
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                    const icon = document.getElementById('fs-icon');
+                    if(icon) icon.classList.replace('fa-compress', 'fa-expand');
+                }
+            }
+        }
+
+        // --- STATE MANAGEMENT & NAVIGATION ---
+        let currentPage = 1;
+        const totalPages = 28;
+        let playerName = "Sam";
+        let bbStress = 0; // 0: Relaxed, 1: Agitated, 2: Toxemia Warning, 3: Autotoxemia
+        let xp = 0;
+        let breathInterval;
+
+        function nav(pageId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            currentPage = parseInt(pageId); 
+            const target = document.getElementById('page-' + currentPage);
+            if(target) target.classList.add('active');
+            document.getElementById('screen-container').scrollTop = 0;
+            updateProgress();
+
+            // Trigger mechanics based on page
+            if (currentPage === 25) {
+                startBreathTimer();
+            } else {
+                clearInterval(breathInterval);
+            }
+        }
+
+        function nextPage() {
+            if (currentPage < totalPages) {
+                const currentEl = document.querySelector('.screen.active');
+                if(currentEl) currentEl.classList.remove('active');
+                currentPage++;
+                const nextEl = document.getElementById('page-' + currentPage);
+                if(nextEl) nextEl.classList.add('active');
+                document.getElementById('screen-container').scrollTop = 0;
+                updateProgress();
+
+                if (currentPage === 25) {
+                    startBreathTimer();
+                } else {
+                    clearInterval(breathInterval);
+                }
+            }
+        }
+
+        function prevPage() {
+            if (currentPage > 1) {
+                const currentEl = document.querySelector('.screen.active');
+                if(currentEl) currentEl.classList.remove('active');
+                currentPage--;
+                const prevEl = document.getElementById('page-' + currentPage);
+                if(prevEl) prevEl.classList.add('active');
+                document.getElementById('screen-container').scrollTop = 0;
+                updateProgress();
+                clearInterval(breathInterval);
+            }
+        }
+
+        function updateProgress() {
+            const percentage = ((currentPage - 1) / (totalPages - 1)) * 100;
+            const progress = document.getElementById('spiral-progress');
+            if (progress) progress.style.width = percentage + '%';
+        }
+
+        function unlockNext(btn) {
+            const screen = btn.closest('.screen');
+            if(screen) {
+                const nextBtn = screen.querySelector('.hidden-next');
+                if(nextBtn) {
+                    nextBtn.classList.remove('opacity-50', 'pointer-events-none');
+                }
+            }
+        }
+
+        // --- CHARACTER REGISTRATION ---
+        function selectCharacter(name, btnElement) {
+            document.querySelectorAll('.char-card').forEach(c => c.classList.remove('selected'));
+            btnElement.classList.add('selected');
+            document.getElementById('player-name-input').value = name;
+        }
+
+        function confirmRegistration() {
+            const nameInput = document.getElementById('player-name-input').value.trim();
+            if(nameInput) playerName = nameInput;
+            document.getElementById('hud-player-name').innerText = `PORTER ${playerName}`;
+            addXP(20);
+            nextPage();
+        }
+
+        // --- XP & BB POD (STRESS HP) ---
+        function addXP(amount) {
+            xp += amount;
+            const xpCounter = document.getElementById('xp-counter');
+            if (xpCounter) {
+                xpCounter.innerText = `${xp} LIKES`;
+                xpCounter.classList.add('text-strandBlue', 'scale-125');
+                setTimeout(() => xpCounter.classList.remove('text-strandBlue', 'scale-125'), 300);
+            }
+            const finalXp = document.getElementById('final-xp');
+            if(finalXp) finalXp.innerText = `${xp}`;
+
+            // Trigger avalanche if it's a good amount
+            if(amount >= 20) {
+                likeAvalanche(amount);
+            }
+        }
+
+        function likeAvalanche(totalAmount) {
+            for(let i=0; i<3; i++) {
+                setTimeout(() => {
+                    createLikePopup(`+${Math.ceil(totalAmount/3)} 👍`);
+                }, i * 200);
+            }
+        }
+
+        function createLikePopup(text) {
+            const container = document.getElementById('screen-container');
+            if(!container) return;
+            const el = document.createElement('div');
+            el.className = 'like-popup absolute';
+            el.innerText = text;
+            el.style.left = (Math.random() * 40 + 30) + '%';
+            el.style.top = (Math.random() * 40 + 30) + '%';
+            container.appendChild(el);
+            setTimeout(() => { if(el.parentNode) el.remove(); }, 1500);
+        }
+
+        function stressBB() {
+            if(bbStress < 3) {
+                bbStress++;
+                updateBBPod();
+                spawnTarHand();
+            }
+        }
+
+        function updateBBPod() {
+            const podContainer = document.getElementById('bb-pod-container');
+            const fluid = document.getElementById('bb-fluid');
+            const icon = document.getElementById('bb-icon');
+            const statusText = document.getElementById('bb-status-text');
+
+            if(!podContainer || !fluid || !statusText || !icon) return;
+
+            podContainer.classList.remove('shadow-[0_0_15px_rgba(212,175,55,0.4)]', 'shadow-[0_0_15px_rgba(230,126,34,0.6)]', 'shadow-[0_0_20px_rgba(231,76,60,0.8)]');
+            podContainer.classList.remove('animate-pulse');
+            icon.classList.remove('animate-bounce', 'text-chiralGold', 'text-odradekOrange', 'text-red-500', 'fa-skull', 'fa-baby');
+            
+            if (bbStress === 0) {
+                fluid.className = 'absolute bottom-0 w-full h-full bg-yellow-500/30 transition-all duration-700';
+                podContainer.classList.add('border-chiralGold', 'shadow-[0_0_15px_rgba(212,175,55,0.4)]');
+                icon.classList.add('fas', 'fa-baby', 'text-chiralGold', 'text-2xl', 'z-10', 'drop-shadow-md', 'transition-all', 'duration-300', 'relative');
+                statusText.innerText = "RELAXED";
+                statusText.className = "font-tech text-chiralGold tracking-widest text-sm font-bold";
+            } 
+            else if (bbStress === 1) {
+                fluid.className = 'absolute bottom-0 w-full h-[80%] bg-orange-500/50 transition-all duration-700';
+                podContainer.classList.replace('border-chiralGold', 'border-odradekOrange');
+                podContainer.classList.add('shadow-[0_0_15px_rgba(230,126,34,0.6)]');
+                icon.classList.add('fas', 'fa-baby', 'text-odradekOrange', 'text-2xl', 'z-10', 'drop-shadow-md', 'transition-all', 'duration-300', 'relative');
+                statusText.innerText = "AGITATED";
+                statusText.className = "font-tech text-odradekOrange tracking-widest text-sm font-bold";
+            } 
+            else if (bbStress === 2) {
+                fluid.className = 'absolute bottom-0 w-full h-[60%] bg-red-600/60 transition-all duration-700';
+                podContainer.classList.replace('border-odradekOrange', 'border-red-500');
+                podContainer.classList.replace('border-chiralGold', 'border-red-500');
+                podContainer.classList.add('shadow-[0_0_20px_rgba(231,76,60,0.8)]', 'animate-pulse');
+                icon.classList.add('fas', 'fa-baby', 'text-red-500', 'text-2xl', 'z-10', 'drop-shadow-md', 'transition-all', 'duration-300', 'relative', 'animate-bounce');
+                statusText.innerText = "TOXEMIA WARNING";
+                statusText.className = "font-tech text-red-500 tracking-widest text-sm font-bold animate-pulse";
+            }
+            else if (bbStress >= 3) {
+                fluid.className = 'absolute bottom-0 w-full h-[30%] bg-red-900/80 transition-all duration-700';
+                podContainer.classList.add('shadow-[0_0_25px_rgba(231,76,60,1)]', 'animate-[pulse_0.5s_infinite]');
+                icon.classList.add('fas', 'fa-skull', 'text-red-500', 'text-2xl', 'z-10', 'drop-shadow-md', 'transition-all', 'duration-300', 'relative', 'animate-bounce');
+                statusText.innerText = "AUTOTOXEMIA";
+                statusText.className = "font-tech text-red-500 tracking-widest text-sm font-bold animate-[pulse_0.5s_infinite]";
+            }
+        }
+
+        function spawnTarHand() {
+            const container = document.getElementById('screen-container');
+            if(!container) return;
+            const hand = document.createElement('i');
+            hand.className = 'fas fa-hand-paper tar-hand';
+            hand.style.fontSize = (Math.random() * 5 + 8) + 'rem';
+            hand.style.left = (Math.random() * 80 + 10) + '%';
+            hand.style.top = (Math.random() * 80 + 10) + '%';
+            hand.style.transform = `rotate(${Math.random() * 360}deg)`;
+            container.appendChild(hand);
+            setTimeout(() => { if(hand.parentNode) hand.remove(); }, 4000);
+        }
+
+        // --- TEACHER TOOLS ---
+        let timerInterval;
+        let seconds = 0;
+        function toggleTools() {
+            const panel = document.getElementById('tools-panel');
+            if(panel) {
+                panel.classList.toggle('hidden');
+                panel.classList.toggle('flex');
+            }
+        }
+        function startTimer() {
+            if(timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                seconds++;
+                const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+                const s = (seconds % 60).toString().padStart(2, '0');
+                document.getElementById('timer-display').innerText = `${m}:${s}`;
+            }, 1000);
+        }
+        function stopTimer() { clearInterval(timerInterval); }
+        function resetTimer() { 
+            clearInterval(timerInterval); 
+            seconds = 0; 
+            document.getElementById('timer-display').innerText = "00:00"; 
+        }
+
+        // --- WHITEBOARD (ODRADEK) ---
+        function toggleWhiteboard() { 
+            const wb = document.getElementById('whiteboard-container');
+            if (wb) wb.classList.toggle('active');
+        }
+        function clearWhiteboard() { 
+            const textEl = document.getElementById('whiteboard-text');
+            if(textEl) textEl.value = ''; 
+        }
+
+        // --- FOLLOW UP ---
+        function toggleFollowUp(btn) {
+            const content = btn.nextElementSibling;
+            const icon = btn.querySelector('i');
+            if (!content || !icon) return;
+            if (content.classList.contains('active')) {
+                content.classList.remove('active');
+                icon.classList.replace('fa-chevron-up', 'fa-chevron-down');
+            } else {
+                content.classList.add('active');
+                icon.classList.replace('fa-chevron-down', 'fa-chevron-up');
+                addXP(10);
+            }
+        }
+
+        function revealVocab(el, def, ex) {
+            if(el.classList.contains('unlocked')) return;
+            el.classList.add('unlocked');
+            
+            const icon = el.querySelector('i');
+            if(icon) {
+                icon.classList.replace('text-gray-500', 'text-chiralGold');
+                icon.classList.add('drop-shadow-[0_0_15px_rgba(212,175,55,0.8)]');
+            }
+            
+            const sweep = el.querySelector('.odradek-sweep');
+            if(sweep) sweep.classList.remove('hidden');
+            
+            const hiddenDiv = el.querySelector('.vocab-hidden');
+            if(hiddenDiv) {
+                hiddenDiv.innerHTML = `<p class="text-white text-xl mb-3 leading-relaxed font-main font-light">${def}</p><p class="text-gray-400 text-lg italic font-main bg-black/40 p-3 rounded">"${ex}"</p>`;
+                hiddenDiv.classList.remove('hidden');
+                hiddenDiv.classList.add('fade-in');
+            }
+            addXP(10);
+            
+            // Heals BB slightly
+            if(bbStress > 0) { bbStress--; updateBBPod(); }
+        }
+
+        // --- MATCHING GAME ---
+        let selectedLeft = null;
+        let matchedCount = 0;
+        function selectMatch(btn, side, id) {
+            if(btn.classList.contains('matched')) return;
+
+            // Trigger Odradek sweep
+            const container = btn.closest('.relative');
+            const sweep = container.querySelector('.odradek-sweep');
+            if(sweep) sweep.classList.remove('hidden');
+
+            if(side === 'left') {
+                document.querySelectorAll('.option-btn').forEach(b => { 
+                    if(!b.classList.contains('matched') && b.closest('.flex-col').previousElementSibling === null) {
+                        b.classList.remove('correct');
+                        b.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                    }
+                });
+                btn.classList.add('correct');
+                btn.style.borderColor = '#4fa3d1';
+                selectedLeft = { btn, id };
+            } 
+            else if (side === 'right' && selectedLeft) {
+                if(selectedLeft.id === id) {
+                    btn.classList.add('matched');
+                    btn.style.borderColor = '#4fa3d1';
+                    btn.style.background = 'rgba(79, 163, 209, 0.2)';
+                    btn.style.color = '#fff';
+                    btn.style.pointerEvents = 'none';
+                    
+                    selectedLeft.btn.classList.remove('correct');
+                    selectedLeft.btn.classList.add('matched');
+                    selectedLeft.btn.style.borderColor = '#4fa3d1';
+                    selectedLeft.btn.style.background = 'rgba(79, 163, 209, 0.2)';
+                    selectedLeft.btn.style.color = '#fff';
+                    selectedLeft.btn.style.pointerEvents = 'none';
+                    
+                    selectedLeft = null;
+                    matchedCount++;
+                    addXP(20);
+                } else {
+                    btn.classList.add('wrong');
+                    selectedLeft.btn.classList.add('wrong');
+                    stressBB();
+                    setTimeout(() => {
+                        btn.classList.remove('wrong');
+                        if(selectedLeft && !selectedLeft.btn.classList.contains('matched')) {
+                           selectedLeft.btn.classList.remove('wrong');
+                           selectedLeft.btn.classList.remove('correct');
+                           selectedLeft.btn.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                        }
+                        selectedLeft = null;
+                    }, 500);
+                }
+            }
+        }
+
+        // --- SENTENCE BUILDER DYNAMIC (CARGO STACKING) ---
+        const routineSentences = [
+            ["He", "carries", "heavy", "cargo", "every", "day."],
+            ["They", "deliver", "packages", "to", "isolated", "bunkers."],
+            ["A", "Porter", "walks", "across", "dangerous", "mountains."]
+        ];
+        let currentRoutineIndex = 0;
+        let selectedWords = [];
+        let targetSentence = [];
+
+        function loadRoutineSentence() {
+            targetSentence = routineSentences[currentRoutineIndex];
+            selectedWords = [];
+            
+            const display = document.getElementById('sentence-display');
+            if(display) {
+                display.innerHTML = '';
+            }
+            
+            const counter = document.getElementById('routine-counter');
+            if(counter) counter.innerText = `Routine ${currentRoutineIndex + 1} of ${routineSentences.length}`;
+            
+            // Shuffle words
+            let shuffled = [...targetSentence].sort(() => Math.random() - 0.5);
+            
+            const wordBank = document.getElementById('word-bank');
+            if(wordBank) {
+                wordBank.innerHTML = '';
+                shuffled.forEach(word => {
+                    const btn = document.createElement('button');
+                    btn.className = 'word-bank-btn py-3 px-6 text-xl rounded shadow-md hover:-translate-y-1 transition-transform';
+                    btn.innerText = word;
+                    btn.onclick = function() { selectWordBank(this); };
+                    wordBank.appendChild(btn);
+                });
+            }
+            
+            const sweep = document.querySelector('#page-13 .odradek-sweep');
+            if(sweep) sweep.classList.add('hidden');
+        }
+
+        function selectWordBank(btn) {
+            const word = btn.innerText;
+            selectedWords.push({word: word, btn: btn});
+            btn.classList.add('hidden-word');
+            renderSentence();
+            
+            const sweep = document.querySelector('#page-13 .odradek-sweep');
+            if(sweep) sweep.classList.remove('hidden');
+            
+            let isCorrectSoFar = true;
+            for(let i=0; i<selectedWords.length; i++) {
+                if(selectedWords[i].word !== targetSentence[i]) isCorrectSoFar = false;
+            }
+
+            const display = document.getElementById('sentence-display');
+            
+            if(!isCorrectSoFar) {
+                // Drop cargo animation
+                document.querySelectorAll('#sentence-display .cargo-box').forEach(box => {
+                    box.style.animation = 'fallDownCargo 0.6s forwards';
+                });
+                
+                stressBB();
+                setTimeout(() => {
+                    resetWordBank();
+                }, 600);
+            } else if(selectedWords.length === targetSentence.length) {
+                addXP(30);
+                if (currentRoutineIndex < routineSentences.length - 1) {
+                    setTimeout(() => {
+                        currentRoutineIndex++;
+                        loadRoutineSentence();
+                    }, 1500);
+                }
+            }
+        }
+
+        function renderSentence() {
+            const display = document.getElementById('sentence-display');
+            if(display) {
+                display.innerHTML = '';
+                selectedWords.forEach(sw => {
+                    const span = document.createElement('span');
+                    span.className = 'cargo-box';
+                    span.innerText = sw.word;
+                    display.appendChild(span);
+                });
+            }
+        }
+
+        function resetWordBank() {
+            selectedWords.forEach(sw => sw.btn.classList.remove('hidden-word'));
+            selectedWords = [];
+            renderSentence();
+        }
+
+        // --- RPG SELECT ---
+        function checkTrialAnswer(btn, isCorrect) {
+            const siblings = btn.parentElement.children;
+            for(let s of siblings) {
+                s.classList.remove('!bg-strandBlue', '!bg-chiralGold', '!bg-odradekOrange', '!text-black', '!bg-red-500', '!text-white', '!border-strandBlue', '!border-red-500', '!border-odradekOrange', '!border-chiralGold');
+            }
+            if(isCorrect) {
+                let colorClass = '!bg-strandBlue';
+                let borderClass = '!border-strandBlue';
+                if(btn.innerHTML.includes('text-odradekOrange')) { colorClass = '!bg-odradekOrange'; borderClass = '!border-odradekOrange'; }
+                if(btn.innerHTML.includes('text-chiralGold')) { colorClass = '!bg-chiralGold'; borderClass = '!border-chiralGold'; }
+
+                btn.classList.add(colorClass, '!text-black', borderClass);
+                addXP(30);
+            } else {
+                btn.classList.add('!bg-red-500', '!text-white', '!border-red-500');
+                stressBB();
+            }
+        }
+
+        function rpgSelect(btn, isCorrect) {
+            checkTrialAnswer(btn, isCorrect);
+        }
+
+        function selectStance(btn) {
+            const siblings = btn.parentElement.children;
+            for(let s of siblings) {
+                s.classList.remove('bg-white', 'text-black', 'bg-red-500', 'text-white');
+                s.classList.add('bg-black/80', 'text-gray-400');
+            }
+            if(btn.dataset.stance.includes('agree') && !btn.dataset.stance.includes('disagree')) {
+                 btn.classList.replace('bg-black/80', 'bg-white');
+                 btn.classList.replace('text-gray-400', 'text-black');
+            } else {
+                 btn.classList.replace('bg-black/80', 'bg-red-500');
+                 btn.classList.replace('text-gray-400', 'text-white');
+            }
+            document.getElementById('stance-followup').classList.remove('hidden');
+            addXP(20);
+            unlockNext(btn);
+        }
+
+        // --- HOLD BREATH MECHANIC (PAGE 25) ---
+        function startBreathTimer() {
+            const container = document.getElementById('breath-bar-container');
+            const bar = document.getElementById('breath-bar');
+            const textDisplay = document.getElementById('b25-text');
+            const buttons = document.querySelectorAll('#page-25 .option-btn');
+            
+            // Reset state
+            buttons.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
+            textDisplay.innerText = "It starts to rain. Your scanner spins wildly. The invisible ghosts are here! Whisper the correct sentence before you run out of breath!";
+            textDisplay.classList.remove('text-red-500');
+            
+            if(container && bar) {
+                let width = 100;
+                bar.style.width = '100%';
+                bar.style.backgroundColor = '#60a5fa'; 
+                
+                clearInterval(breathInterval);
+                breathInterval = setInterval(() => {
+                    width -= 0.5; // 20s total timer
+                    bar.style.width = width + '%';
+                    if(width < 50) bar.style.backgroundColor = '#facc15'; 
+                    if(width < 20) bar.style.backgroundColor = '#ef4444'; 
+                    if(width <= 0) {
+                        clearInterval(breathInterval);
+                        stressBB();
+                        textDisplay.innerText = "You gasped for air! The BT heard you!";
+                        textDisplay.classList.add('text-red-500', 'font-bold');
+                        buttons.forEach(b => { b.disabled = true; b.style.opacity = '0.5'; });
+                    }
+                }, 100);
+            }
+        }
+
+        function rpgSelectTimed(btn, isCorrect) {
+            clearInterval(breathInterval); // Stop timer on answer
+            checkTrialAnswer(btn, isCorrect);
+            if(!isCorrect) {
+                // Lock out and force skip if wrong
+                const buttons = document.querySelectorAll('#page-25 .option-btn');
+                buttons.forEach(b => { b.disabled = true; });
+            }
+        }
+
+        // --- RAIN EFFECT ---
+        function createRain() {
+            const container = document.getElementById('rain-container');
+            if(!container) return;
+            const dropCount = 80;
+            for(let i=0; i<dropCount; i++) {
+                const drop = document.createElement('div');
+                drop.className = 'drop';
+                drop.style.left = Math.random() * 100 + 'vw';
+                drop.style.animationDuration = (Math.random() * 0.5 + 0.5) + 's';
+                drop.style.animationDelay = (Math.random() * 2) + 's';
+                container.appendChild(drop);
+            }
+        }
+
+        window.onload = () => {
+            createRain();
+            loadRoutineSentence();
+            updateProgress();
+            
+            // Initialize BB Pod
+            const bbIcon = document.getElementById('bb-icon');
+            if(bbIcon) bbIcon.classList.remove('hidden');
+        };
+
+    </script>
+</body>
+</html>
